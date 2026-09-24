@@ -138,6 +138,15 @@ async function withAppLock<T>(
 	work: (client: pg.PoolClient) => Promise<T>,
 ): Promise<T> {
 	const client = await db().connect();
+	// The pool listens for "error" only on an idle client. If Postgres closes
+	// the connection during the transaction, for example in a restart or a
+	// failover, the client emits "error". If no listener gets the event, Node
+	// stops the process. The query fails too, and its error goes to the
+	// caller, so this listener only logs the error.
+	const logError = (error: Error) => {
+		console.error("Lost a Postgres connection in a transaction:", error);
+	};
+	client.on("error", logError);
 	try {
 		await client.query("begin");
 		// The lock must come before the reads: a statement sees only the rows
@@ -153,6 +162,9 @@ async function withAppLock<T>(
 		await client.query("rollback").catch(() => {});
 		throw error;
 	} finally {
+		// release() attaches the listener of the pool again. If this listener
+		// remains, each transaction on the client adds one more.
+		client.off("error", logError);
 		client.release();
 	}
 }
