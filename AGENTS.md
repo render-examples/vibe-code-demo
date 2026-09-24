@@ -175,8 +175,8 @@ templates/
   fullstack/     web/ (Vite + React + Tailwind + shadcn/ui), api/ (Hono + pg)
 scripts/         migrate, doctor, demo, support
 tests/           agents, blueprint, contracts, gateway, git, github-auth,
-                 host, images, policy, render, shell, teardown, templates,
-                 tools, workflow
+                 host, images, policy, render, shell, store, teardown,
+                 templates, tools, workflow
 ```
 
 There is no `tasks.ts`, `scaffold.ts`, `shell.ts`, `github.ts`, or `format.ts`:
