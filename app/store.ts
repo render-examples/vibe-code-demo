@@ -111,6 +111,13 @@ export function db(): pg.Pool {
 			allowExitOnIdle: true,
 			options: "-c statement_timeout=15000 -c lock_timeout=5000",
 		});
+		// Postgres can close an idle connection of the pool, for example in a
+		// restart or a failover. The pool then removes the client and emits
+		// "error". If no listener gets the event, Node stops the process. The
+		// next query gets a new connection, so the listener only logs the error.
+		pool.on("error", (error) => {
+			console.error("Lost an idle Postgres connection:", error);
+		});
 	}
 	return pool;
 }
