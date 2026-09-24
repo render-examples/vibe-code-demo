@@ -33,7 +33,16 @@ import { verifyAppTask } from "./verify.js";
 const MAX_DEPLOY_REPAIR_ROUNDS = 2;
 const SERVICE_TIMEOUT_MS = 6 * 60 * 1000;
 const DEPLOY_TIMEOUT_MS = 15 * 60 * 1000;
-const SITE_TIMEOUT_MS = 3 * 60 * 1000;
+/**
+ * Render can route a new onrender.com hostname some minutes after the first
+ * deploy of its service is live. Until then, the hostname gives 404. On
+ * 2026-09-24, a new static site gave 404 for more than 3 minutes after its
+ * deploy was live, and it gave 200 before 10 minutes. So the first check of
+ * each public URL waits this long.
+ */
+const ROUTE_TIMEOUT_MS = 10 * 60 * 1000;
+/** The data check starts after the health check of the same host passed. */
+const DATA_TIMEOUT_MS = 3 * 60 * 1000;
 /** The Render Dashboard shows each task input, so keep the logs in it small. */
 const MAX_DEPLOY_LOG_CHARS = 4_000;
 
@@ -279,13 +288,13 @@ export async function awaitDeployment(
 		};
 	}
 
-	const site = await waitForHttpOk(webUrl, SITE_TIMEOUT_MS, {
+	const site = await waitForHttpOk(webUrl, ROUTE_TIMEOUT_MS, {
 		onPoll: heartbeat,
 	});
 	if (!site.ok) {
 		return {
 			status: "deploy_failed",
-			summary: `${webUrl} did not return a successful response (last status ${site.status}).`,
+			summary: `${webUrl} did not return a successful response in ${ROUTE_TIMEOUT_MS / 60000} minutes (last status ${site.status}).`,
 		};
 	}
 
@@ -420,18 +429,18 @@ async function smokeApi(
 	onPoll?: (detail: string) => void | Promise<void>,
 ): Promise<string | null> {
 	const healthPath = service.healthCheckPath ?? "/health";
-	const health = await waitForHttpOk(`${apiUrl}${healthPath}`, SITE_TIMEOUT_MS, {
+	const health = await waitForHttpOk(`${apiUrl}${healthPath}`, ROUTE_TIMEOUT_MS, {
 		onPoll,
 	});
 	if (!health.ok) {
-		return `${apiUrl}${healthPath} did not answer (last status ${health.status}).`;
+		return `${apiUrl}${healthPath} did not answer in ${ROUTE_TIMEOUT_MS / 60000} minutes (last status ${health.status}).`;
 	}
 
 	if (!service.dataCheckPath) return null;
 
 	const data = await waitForHttpOk(
 		`${apiUrl}${service.dataCheckPath}`,
-		SITE_TIMEOUT_MS,
+		DATA_TIMEOUT_MS,
 		{
 			headers: webOrigin ? { origin: webOrigin } : undefined,
 			onPoll,
