@@ -402,7 +402,7 @@ Copy `.env.example` when setting up locally.
 - `verifying`: `verify-app` builds, boots, and queries the app in the sandbox. If it does not finish in 30 minutes, for example because a build command does not exit, the run ends as `failed`.
 - `waiting_for_services`: Blueprint sync has not created every expected service.
 - `waiting_for_deploys`: at least one Render deploy has not reached a terminal state. After a repair push, it can also mean that Render has not started the new deploy of a failed service yet. If Render does not start one in 15 minutes, the run ends as `deploy_failed`.
-- `smoke_testing`: deploys are live; public URL, API hostname, data, or CORS checks are still running.
+- `smoke_testing`: deploys are live; public URL, API hostname, data, or CORS checks are still running. Render can route a new hostname some minutes after its first deploy is live, and until then the URL gives 404. So the first check of the site and of the API health endpoint waits up to 10 minutes, and the data check waits up to 3 minutes.
 - `done`: the stored run is terminal.
 
 All deploy and HTTP waits have deadlines and heartbeat the database. The

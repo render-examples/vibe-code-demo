@@ -944,6 +944,78 @@ describe("awaitDeployment Blueprint lookup", () => {
 	});
 });
 
+/**
+ * Render can route a new hostname some minutes after its first deploy is
+ * live. A run once ended as deploy_failed, because its site gave 404 for the
+ * 3 minutes of the check, and the site was live.
+ */
+describe("awaitDeployment smoke checks", () => {
+	const WEB_URL = "https://acme-demo-shop-web.onrender.com";
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+		newBuild();
+		mocks.findBlueprint.mockResolvedValue({
+			id: "exs-test",
+			name: "factory",
+			status: "synced",
+			autoSync: true,
+			repo: "https://github.com/acme/apps",
+			branch: "main",
+			path: "render.yaml",
+		});
+		mocks.waitForServices.mockImplementation(
+			async (_workspaceId: string, names: string[]) =>
+				new Map(
+					names.map((name) => [
+						name,
+						{ id: `srv-${name}`, name, url: `https://${name}.onrender.com` },
+					]),
+				),
+		);
+		mocks.waitForDeploy.mockResolvedValue(LIVE);
+		mocks.waitForHttpOk.mockResolvedValue({
+			ok: true,
+			status: 200,
+			body: '[{"id":1}]',
+			headers: new Headers({ "access-control-allow-origin": "*" }),
+		});
+		mocks.pageContains.mockResolvedValue(true);
+	});
+
+	it("waits longer for the first answer of each hostname than for the data", async () => {
+		const result = await deploy();
+
+		expect(result.status, result.summary).toBe("deployed");
+		expect(
+			mocks.waitForHttpOk.mock.calls.map(([url, timeoutMs]) => [
+				url,
+				timeoutMs / 60_000,
+			]),
+		).toEqual([
+			[WEB_URL, 10],
+			[`${API_URL}/health`, 10],
+			[`${API_URL}/api/items`, 3],
+		]);
+	});
+
+	it("tells how long it waited for a site that did not answer", async () => {
+		mocks.waitForHttpOk.mockResolvedValueOnce({
+			ok: false,
+			status: 404,
+			body: "",
+			headers: new Headers(),
+		});
+
+		const result = await deploy();
+
+		expect(result).toEqual({
+			status: "deploy_failed",
+			summary: `${WEB_URL} did not return a successful response in 10 minutes (last status 404).`,
+		});
+	});
+});
+
 /* ── Delete ───────────────────────────────────────────────────────────── */
 
 const APP_SOURCE = `${APP_DIR}/web/index.html`;

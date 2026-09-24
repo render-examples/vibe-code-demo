@@ -443,9 +443,12 @@ next command that has the token.
 Deployment progress distinguishes `waiting_for_services`,
 `waiting_for_deploys`, and `smoke_testing`. Render reporting `live` is not
 terminal: the public URL, data endpoint, and CORS checks must pass before the
-run becomes `deployed`. The storefront check must also pass: the HTML of the
-storefront, or a script that it loads, must contain the public hostname of the
-API. The API checks cannot see the hostname that a browser uses.
+run becomes `deployed`. Render can route a new hostname some minutes after its
+first deploy is live, and until then the URL gives 404. So the first check of
+each public URL waits `ROUTE_TIMEOUT_MS`, not the shorter `DATA_TIMEOUT_MS`.
+The storefront check must also pass: the HTML of the storefront, or a script
+that it loads, must contain the public hostname of the API. The API checks
+cannot see the hostname that a browser uses.
 
 Each stage in `RUN_STAGES` has an item in the stage list of
 `public/index.html`, in the same order, with a tooltip that tells what the
