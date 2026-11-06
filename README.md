@@ -9,7 +9,7 @@ It is a reference app: real, running TypeScript that shows how Render
 Workflows, Sandboxes, Blueprints, Postgres, and the read-only Render MCP server
 fit together in an agent product.
 
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/render-examples/vibe-coding-app)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy-template/api/github/start?template_repo=vibe-coding-app)
 
 Before you deploy, prepare:
 
@@ -110,8 +110,9 @@ paid plans and bill until you delete the app.
 
 ## Deploy the factory to Render
 
-Click **Deploy to Render** above, or create a Blueprint from this repository's
-`render.yaml`. It creates the gateway, the workflow service, and their database
+Click **Deploy to Render** above to fork this repository into your GitHub
+account and create a Blueprint from your fork, or create a Blueprint from this
+repository's `render.yaml` yourself. It creates the gateway, the workflow service, and their database
 in a `vibe-factory` project, and prompts you once for each secret.
 [docs/0_QUICKSTART.md](docs/0_QUICKSTART.md#deploy-the-factory-to-render)
 has the full steps.
